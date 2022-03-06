@@ -45,35 +45,24 @@ passport.use('local-login', new LocalStrategy({
         if (err) return done(err);
 
         if (rows.length) {
-            console.log('exist user')
-            return done(null, false, { message: 'your email is already used' })
+            return done(null, { 'email': email })
         } else {
-            var sql = { email: email, pw: password };
-            var query = connection.query('insert into user set ?', sql, function (err, rows) {
-                if (err) throw err
-                return done(null, { 'email': email });
-            })
-        }
-    })
-}));
+            return done(null, false, {'message':'your login info is not found ㅠㅠ'});
+            }
+        })
+    }
+));
 
-router.post('/', passport.authenticate('local-join', {
-    successRedirect: '/main',
-    failureRedirect: '/join',
-    failureFlash: true
-}))
+router.post('/', function(req, res, next){
+    passport.authenticate('local-login', function(err,user,info){
+        if(err) res.status(500).json(err);
+        if (!user) return res.status(401).json(info.message);
 
-// router.post('/', function(req,res){
-//     var body = req.body;
-//     var email = body.email;
-//     var name = body.name;
-//     var passwd = body.password;
-
-//     var sql = {email : email, name : name, pw: passwd};
-//     var query = connection.query('insert into user set ?', sql, function(err,rows){
-//         if (err) throw err
-//         else res.render('welcome.ejs', {'name': name})
-//     })
-// })
+        req.logIn(user, function(err){
+            if (err) {return next(err);}
+            return res.json(user);
+        });
+    })(req, res, next);
+})
 
 module.exports = router;
